@@ -1,0 +1,15 @@
+# Generated build and editor data
+**/bin/
+**/obj/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+TestResults/
+*.trx
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*

@@ -1,0 +1,26 @@
+name: Family tree validation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet test tests/Explorer.Tests.csproj --configuration Release
+      - run: dotnet build src/SampleServer/FamilyTreeServer.csproj --configuration Release
+      - name: Verify both traversals against the sample service
+        shell: bash
+        run: |
+          dotnet run --project src/SampleServer/FamilyTreeServer.csproj --configuration Release --no-build > "$RUNNER_TEMP/family-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..50}; do
+            if curl --silent --fail http://127.0.0.1:8123/ > /dev/null; then break; fi
+            sleep 0.2
+          done
+          dotnet run --project src/Explorer/Assignment14.csproj --configuration Release --no-build -- --strategy both --generations 3
